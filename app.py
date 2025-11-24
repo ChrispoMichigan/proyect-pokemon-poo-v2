@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 import os
 import sqlite3
 import json
+from datetime import datetime
 
 
 '''
@@ -192,6 +193,15 @@ class DataBase:
         ))            
 
         self.conexion.commit()
+
+    def post_combate(self, user_id :int, ruta: str):
+        self.cursor.execute("INSERT INTO battles (id_user, txt_route) VALUES(?, ?)", (user_id, ruta,))
+        self.conexion.commit()
+    
+    def get_all_combates_by_user_id(self, user_id: int):
+        self.cursor.execute('SELECT * FROM battles WHERE id_user = ?', (user_id,))
+        combates = self.cursor.fetchall()
+        return combates
 class Utils:
     @staticmethod 
     def clear():
@@ -960,6 +970,9 @@ class App:
         if self.mi_pokemon is None:
             return
 
+        data_combate = []
+        data_combate.append(f'Combate contra enemigo {self.mi_pokemon.nombre} - {enemigo.nombre}')
+
         mi_def = self.mi_pokemon.defensa
         mi_vida = self.mi_pokemon.vida
         en_def = enemigo.defensa
@@ -990,22 +1003,27 @@ class App:
 
                 if op == 1:
                     print("Pase el turno.")
+                    data_combate.append("Pase el turno.")
 
                 elif op == 2:
                     en_def, en_vida = aplicar_daño(self.mi_pokemon.ataque, en_def, en_vida)
                     print(f"Hiciste un ataque normal con {self.mi_pokemon.ataque}.")
+                    data_combate.append(f"Hiciste un ataque normal con {self.mi_pokemon.ataque}.")
 
                     mi_def, mi_vida = aplicar_daño(enemigo.ataque, mi_def, mi_vida)
                     print(f"{enemigo.nombre} te contraataca ({enemigo.ataque}).")
+                    data_combate.append(f"{enemigo.nombre} te contraataca ({enemigo.ataque}).")
 
                 elif op == 3:
                     atk_val = int(self.mi_pokemon.ataque * 1.5)
                     en_def, en_vida = aplicar_daño(atk_val, en_def, en_vida)
                     special = getattr(self.mi_pokemon, "ataque_especial", "Ataque Especial")
                     print(f"{self.mi_pokemon.nombre} usa {special} ({atk_val} dmg).")
+                    data_combate.append(f"{self.mi_pokemon.nombre} usa {special} ({atk_val} dmg).")
 
                     mi_def, mi_vida = aplicar_daño(enemigo.ataque, mi_def, mi_vida)
                     print(f"{enemigo.nombre} te contraataca ({enemigo.ataque}).")
+                    data_combate.append(f"{enemigo.nombre} te contraataca ({enemigo.ataque}).")
 
                 elif op == 4:
                     print("Huyes del combate.")
@@ -1021,16 +1039,19 @@ class App:
                 
                 if choice == 1:
                     print(f"{enemigo.nombre} pasa el turno.")
+                    data_combate.append(f"{enemigo.nombre} pasa el turno.")
 
                 elif choice == 2:
                     mi_def, mi_vida = aplicar_daño(enemigo.ataque, mi_def, mi_vida)
                     print(f" {enemigo.nombre} te golpea con ataque normal ({enemigo.ataque}).")
+                    data_combate.append(f" {enemigo.nombre} te golpea con ataque normal ({enemigo.ataque}).")
 
                 elif choice == 3:
                     atk_val = int(enemigo.ataque * 1.5)
                     mi_def, mi_vida = aplicar_daño(atk_val, mi_def, mi_vida)
                     special = getattr(enemigo, "ataque_especial", "Atgaque Especial")
                     print(f"{enemigo.nombre} usa {special} ({atk_val} dmg).")
+                    data_combate.append(f"{enemigo.nombre} usa {special} ({atk_val} dmg).")
 
                 turno_jugador = True
 
@@ -1041,6 +1062,7 @@ class App:
         Utils.clear()
         if en_vida <= 0:
             print("Has derrotado al enemigo!")
+            data_combate.append("Has derrotado al enemigo!")
             if enemigo.vida < self.mi_pokemon.vida:
                 print("Puedes elegir atraparlo.")
                 print("1. Atrapar")
@@ -1059,7 +1081,40 @@ class App:
                 print("El enemigo es demasiado fuerte para atraparlo.")
         else:
             print("Has sido derrotado...")
+            data_combate.append("Has sido derrotado...")
+
+        self.__guardar_combate(data_combate)
         Utils.pause()
+
+    def __guardar_combate(self, data: List[str]):
+        try:
+            # Crear la carpeta 'combates' si no existe
+            carpeta_combates = 'combates'
+            if not os.path.exists(carpeta_combates):
+                os.makedirs(carpeta_combates)
+            
+            # Generar nombre del archivo con jugador y fecha actual
+            fecha_actual = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            nombre_archivo = f"{self.jugador_nombre}_{fecha_actual}.txt"
+            ruta_archivo = os.path.join(carpeta_combates, nombre_archivo)
+            
+            # Escribir los datos del combate al archivo
+            with open(ruta_archivo, 'w', encoding='utf-8') as archivo:
+                archivo.write(f"REGISTRO DE COMBATE\n")
+                archivo.write(f"Jugador: {self.jugador_nombre}\n")
+                archivo.write(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                archivo.write(f"{'='*50}\n\n")
+                
+                for linea in data:
+                    archivo.write(f"{linea}\n")
+            
+            Utils.print_title(f"Combate guardado en: {ruta_archivo}")
+
+            self.database.post_combate(self.id_jugador, ruta_archivo)
+            
+        except Exception as e:
+            print(f"Error al guardar el combate: {e}")
+
 
     def VerPokemonsAtrapados(self):
         Utils.print_title("POKEMON ATRAPADOS")
