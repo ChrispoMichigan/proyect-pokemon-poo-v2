@@ -9,11 +9,6 @@ from datetime import datetime
 from copy import deepcopy
 
 
-'''
-#*
-#* Todas las operaciónes de la base de datos
-#*
-'''
 class DataBase:
     def __init__(self) -> None:
         self.conexion = sqlite3.connect('pokedex.db')
@@ -68,7 +63,6 @@ class DataBase:
             )
             """)
         
-        # Confirmar cambios
         self.conexion.commit()
 
     def get_all_users(self) -> List[Tuple]:
@@ -225,7 +219,6 @@ class Utils:
         print("=" * 60)
 
 
-#clase base abstracta 
 class PokemonBase(ABC):
     def __init__(self,
         nombre: str = "Sin Pokemon",
@@ -275,8 +268,6 @@ class PokemonBase(ABC):
                 self.nivel = 0
         return False
 
-
-#Entrenamiento abstracto
 class Entrenamiento(ABC):
     @abstractmethod
     def subirAtaque(self):
@@ -290,7 +281,6 @@ class Entrenamiento(ABC):
     def subirVida(self):
         raise NotImplementedError
         
-#Clase Pokemon
 
 class Pokemon(PokemonBase):
     BOOST_ATAQUE = 20 
@@ -345,14 +335,12 @@ class Pokemon(PokemonBase):
         self.vida += 10
         evoluciono = self.subir_nivel(10)
         if evoluciono:
-            # actualizar nombre si existe en lista
             idx = min(self.evolucion - 1, len(self.evoluciones_nombres) - 1)
             self.nombre = self.evoluciones_nombres[idx]
             print(f"¡El Pokemon ha evolucionado! Ahora es: {self.nombre}")
         else:
             print("Entrenamiento aplicado.")
 
-#metodos individuales
     def subirAtaque(self):
         self.ataque += self.BOOST_ATAQUE
         print(f"Ataque aumentada a {self.ataque}")
@@ -371,8 +359,6 @@ class Pokemon(PokemonBase):
         self.vida += self.BOOST_VIDA
         self.evoluciono = self.subir_nivel(0)
         print(f"Actualizacion completa: ataque, defensa y vida incrementados.")
-
-#subclases especializadas
 
 class Agua(Pokemon):
 
@@ -472,9 +458,6 @@ class Hierba(Pokemon):
         self.vida += 5
         print(f"{self.nombre} (Hierba) se nutre: +5 ataque, +5 vida.")
 
-
-#herencia multiple pokemonn con entrenamiento
-
 class PokemonConEntrenamiento(Pokemon, Entrenamiento):
     def subirAtaque(self):
         Pokemon.subirAtaque(self)
@@ -485,10 +468,7 @@ class PokemonConEntrenamiento(Pokemon, Entrenamiento):
     def subirVida(self):
         Pokemon.subirVida(self)
 
-#sistema de combate
-
 def aplicar_daño(atacante_val: int, defensor_def: int, defensor_vida: int) -> Tuple[int, int]:
-        # atacando defensa
     resta = atacante_val
     if defensor_def >= resta:
         defensor_def -= resta
@@ -500,18 +480,13 @@ def aplicar_daño(atacante_val: int, defensor_def: int, defensor_vida: int) -> T
             defensor_vida = 0
     return defensor_def, defensor_vida
 
-#clase app 
-
 class App:
     def __init__(self):
         self.id_jugador : int
         self.jugador_nombre: str = ""
         self.mi_pokemon: Agua | Fuego | Electrico | Hierba | None = None
         self.pokemons_atrapados : List[Agua | Fuego | Electrico | Hierba] = []
-        #enemigos por defecto 2 debiles y 2 fuertes
         self.enemigos: List[Agua | Fuego | Electrico | Hierba] = self._crear_enemigos_por_defecto()
-
-        # Crear base de datos
         self.database = DataBase()
         Utils.clear()
         self.__init_app()
@@ -728,7 +703,6 @@ class App:
                 if 1 <= sel <= len(opciones):
                     self.mi_pokemon = opciones[sel - 1][1]
 
-                    # Añadir pokemon a jugador en la base de datos
                     self.database.post_pokemon_by_id_user(self.id_jugador, opciones[sel - 1][1])
                     
                     if self.mi_pokemon is None:
@@ -762,7 +736,7 @@ class App:
         while True:
             Utils.print_title('Selecciona el combate a ver')
             for i, combate in enumerate(registros):
-                print(f'[{i+1}] : {combate[2][9:]}')  # Mostrar sin 'combates\'
+                print(f'[{i+1}] : {combate[2][9:]}')
             print(f'[{len(registros)+1}] - Salir')
             
             try:
@@ -773,7 +747,6 @@ class App:
                 if opc == len(registros) + 1:
                     return
                 
-                # Leer y mostrar el archivo de combate seleccionado
                 ruta = registros[opc - 1][2]
                 self.__mostrar_combate(ruta)
                 Utils.pause()
@@ -785,14 +758,13 @@ class App:
                 Utils.clear()
 
     def __mostrar_combate(self, ruta: str):
-        """Muestra el contenido del archivo de combate línea por línea"""
         try:
             Utils.clear()
             Utils.print_title('CONTENIDO DEL COMBATE')
             
             with open(ruta, 'r', encoding='utf-8') as archivo:
                 for linea in archivo:
-                    print(linea.rstrip())  # rstrip() para quitar salto de línea extra
+                    print(linea.rstrip())
                     
         except FileNotFoundError:
             Utils.print_title('ARCHIVO NO ENCONTRADO')
@@ -1031,8 +1003,6 @@ class App:
                 print("Opcion invalida.")
             Utils.clear()
 
-#combate u atrapado
-
     def select_enemy(self) -> Agua | Fuego | Hierba | Electrico:
         if not self.enemigos:
             self.enemigos = self._crear_enemigos_por_defecto()
@@ -1066,7 +1036,6 @@ class App:
                 print("Seleccion invalida.")
                 Utils.pause()
                 return
-        #combate por turnos
         Utils.clear()
         self.combate_con_enemigo(enemigo)
 
@@ -1192,17 +1161,14 @@ class App:
 
     def __guardar_combate(self, data: List[str]):
         try:
-            # Crear la carpeta 'combates' si no existe
             carpeta_combates = 'combates'
             if not os.path.exists(carpeta_combates):
                 os.makedirs(carpeta_combates)
-            
-            # Generar nombre del archivo con jugador y fecha actual
+        
             fecha_actual = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
             nombre_archivo = f"{self.jugador_nombre}_{fecha_actual}.txt"
             ruta_archivo = os.path.join(carpeta_combates, nombre_archivo)
-            
-            # Escribir los datos del combate al archivo
+
             with open(ruta_archivo, 'w', encoding='utf-8') as archivo:
                 archivo.write(f"REGISTRO DE COMBATE\n")
                 archivo.write(f"Jugador: {self.jugador_nombre}\n")
