@@ -319,7 +319,7 @@ class Pokemon(PokemonBase):
 
     
     def mostrar_datos(self):
-        print("\n                    --- ESTADISTICAS ACTUALES ---")
+        print("\t--- ESTADISTICAS ACTUALES ---")
         print(f"Nombre: {self.nombre} | Ataque: {self.ataque} | Defensa: {self.defensa} | Vida: {self.vida} | Nivel: {self.nivel}")
 
     def hablar(self):
@@ -591,6 +591,12 @@ class App:
         del pokemons[0]
         self.pokemons_atrapados = pokemons
 
+        Utils.print_title('Pokemones cargados')
+        for pokemon in pokemons_db:
+            Utils.print_title(f'Nombre: {pokemon[1]} | Ataque: {pokemon[5]} | Defensa {pokemon[6]} | Vida: {pokemon[7]} | Nivel: {pokemon[8]}')
+        Utils.pause()
+        Utils.clear()
+
     def __seleccionar_guardado(self):
         while True:
             usuarios = self.database.get_all_users()
@@ -623,6 +629,7 @@ class App:
             self.id_jugador = usuarios[user_option - 1][0]
             self.jugador_nombre = usuarios[user_option - 1][1]
             Utils.print_title('Usuario cargado correctamente')
+            print(f'¡Bienvenido de nuevo {self.jugador_nombre}')
             Utils.pause()
             Utils.clear()
 
@@ -737,7 +744,8 @@ class App:
             print("2. Hablar Pokemon")
             print("3. Entrenamiento ")
             print("4. Combatir")
-            print("5. Ver Pokemon Atrapado")
+            print("5. Crear enemigo personalizado")
+            print("6. Ver Pokemon Atrapado")
             print("7. Pruebas de Manejo de errores")
             print("8. Registros de batallas")
             print("9. Guardar partida")
@@ -756,36 +764,40 @@ class App:
             if op == 1:
                 if self.mi_pokemon:
                     self.mi_pokemon.detallesPokemon()
+                    Utils.pause()
                 else:
                     print("No tienes Pokemon.")
-                Utils.pause()
+                    Utils.pause()
 
             elif op == 2:
                 if self.mi_pokemon:
                     self.mi_pokemon.hablar()
+                    Utils.pause()
                 else:
                     print("No tienes Pokemon.")
-                Utils.pause()
+                    Utils.pause()
 
             elif op == 3:
                 if self.mi_pokemon:
                     self.menu_entrenamiento()
+                    Utils.pause()
                 else:
                     print("No tienes Pokemon.")
-                Utils.pause()
+                    Utils.pause()
 
             elif op == 4:
                 if self.mi_pokemon:
                     self.menu_combatir()
+                    Utils.pause()
                 else:
                     print("No tienes Pokemon.")
-                Utils.pause()
-                
+                    Utils.pause()
+
             elif op == 5:
-                self.VerPokemonsAtrapados()
+                self.crear_pokemon_enemigo_manual()
 
             elif op == 6:
-                self.crear_pokemon_enemigo_manual()
+                self.VerPokemonsAtrapados()
                 
             elif op == 7:
                 self.pruebas_manejo_errores()
@@ -803,7 +815,6 @@ class App:
             else:
                 print("Opcion invalida")
             Utils.clear()
-    #entrenamiento
 
     def __guardar_partida(self):
         if self.mi_pokemon is None:
@@ -822,7 +833,11 @@ class App:
 
         self.database.put_user_update_by_id(self.id_jugador)
 
-        Utils.print_title('Información Guardada')
+        progreso = self.database.get_user_by_id(self.id_jugador)
+
+        Utils.print_title('Información Guardada para:')
+        print(f'Usuario {progreso[1]}')
+        print(f'Fecha {progreso[2]}')
         Utils.pause()
         Utils.clear()
 
@@ -938,6 +953,7 @@ class App:
                 Utils.pause()
                 return
         #combate por turnos
+        Utils.clear()
         self.combate_con_enemigo(enemigo)
 
     def combate_con_enemigo(self, enemigo: Agua | Fuego | Hierba | Electrico):
@@ -1056,24 +1072,50 @@ class App:
 
     def crear_pokemon_enemigo_manual(self):
         Utils.print_title("CREAR POKEMON ENEMIGO")
-        try:
-            nombre = input("Nombre del enemigo: ").strip() or "Enemigo creado"
-            desc = input("Descripcion:  ").strip() or "Enemigo"
-            ataque = int(input("Ataque(1-100): "))
-            defensa = int(input("Defensa (1-100):  "))
-            vida = int(input("Vida (1-100):  "))
-            nivel = int(input("Nivel (1-1000):  "))
-        except ValueError:
-            print("Entrada invalida - valores numericos requeridos.")
-            Utils.pause()
-            return
+        while True:
+            try:
+                nombre = input("Nombre del enemigo: ").strip() or "Enemigo creado"
+                desc = input("Descripcion:  ").strip() or "Enemigo"
+
+                while True:
+                    ataque = int(input("Ataque(1-100): "))
+                    if ataque > 0 and ataque < 101:
+                        break
+                    print('Fuera de rango, intente de nuevo')
+
+                while True:
+                    defensa = int(input("Defensa (1-100):  "))
+                    if defensa > 0 and defensa < 101:
+                        break
+                    print('Fuera de rango, intente de nuevo')
+
+                while True:
+                    vida = int(input("Vida (1-100):  "))
+                    if vida > 0 and vida < 101:
+                        break
+                    print('Fuera de rango, intente de nuevo')
+
+                while True:
+                    nivel = int(input("Nivel (1-99):  "))
+                    if nivel> 0 and nivel < 100:
+                        break
+                    print('Fuera de rango, intente de nuevo')
+
+                break
+            except ValueError:
+                print("Entrada invalida - valores numericos requeridos.")
+                Utils.pause()
 
         print("Tipo del enemigo: ")
         print("1. Agua  2. Fuego  3. Electrico  4. Hierba ")
-        try:
-            t = int(input("Elige tipo: "))
-        except ValueError:
-            t = 1
+        while True:
+            try:
+                t = int(input("Elige tipo: "))
+                if t > 4 or t < 1:
+                    raise ValueError 
+                break
+            except ValueError:
+                print('Inserte un valor válido')
         if t == 1:
             nuevo = Agua(nombre, desc, ataque, defensa, vida, nivel)
         elif t == 2:
