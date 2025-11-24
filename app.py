@@ -691,9 +691,13 @@ class App:
             print("4. Combatir")
             print("5. Ver Pokemon Atrapado")
             print("7. Pruebas de Manejo de errores")
-            print("8. Salir")
+            print("8. Registros de batallas")
+            print("9. Guardar partida")
+            print("10. Salir")
             try:
                 op = int(input("Elige una opcion:  "))
+                if op < 1 or op > 10:
+                    raise ValueError
             except ValueError:
                 print("Ingresa un numero valido")
                 Utils.pause()
@@ -739,6 +743,12 @@ class App:
                 self.pruebas_manejo_errores()
 
             elif op == 8:
+                pass
+            
+            elif op == 9:
+                pass
+
+            elif op == 10:
                 print("Gracias por usar la Pokedex! Hasta luego.")
                 break
 
