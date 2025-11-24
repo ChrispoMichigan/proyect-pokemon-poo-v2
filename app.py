@@ -317,6 +317,10 @@ class Pokemon(PokemonBase):
         print(f"Evolucion      : {self.evolucion}")
         print(f"Atrapado   : {'Sí' if self.atrapado else 'No'}")
 
+    
+    def mostrar_datos(self):
+        print("\n                    --- ESTADISTICAS ACTUALES ---")
+        print(f"Nombre: {self.nombre} | Ataque: {self.ataque} | Defensa: {self.defensa} | Vida: {self.vida} | Nivel: {self.nivel}")
 
     def hablar(self):
         print(f"{self.nombre}! {self.nombre}!")
@@ -844,9 +848,11 @@ class App:
 
             Utils.clear()
             if op == 1:
+                print(f"\nEntrenamiento Normal: actualiza ataque, defensa y nivel (al mismo tiempo)")
                 self.mi_pokemon.entrenar()
+                self.mi_pokemon.mostrar_datos()
                 Utils.pause()
-
+                
             elif op == 2:
                 print("1. Subir Ataque")
                 print("2. Subir Defensa")
@@ -866,12 +872,9 @@ class App:
                 Utils.pause()
 
             elif op == 3:
+                print("\nEntrenamiento Intensivo: actualiza ataque, defensa y vida con boost.")
                 self.mi_pokemon.actualizar()
-                evoluciono = self.mi_pokemon.subir_nivel(10)
-                if evoluciono:
-                    idx = min(self.mi_pokemon.evolucion - 1, len(self.mi_pokemon.evoluciones_nombres) - 1)
-                    self.mi_pokemon.nombre = self.mi_pokemon.evoluciones_nombres[idx]
-                    print(f"El pokemon ha evolucionado! Ahora es: {self.mi_pokemon.nombre}")
+                self.mi_pokemon.mostrar_datos()
                 Utils.pause()
 
 
@@ -880,13 +883,19 @@ class App:
                     a = int(input("Ingresa nuevo valor de Ataque:  "))
                     d = int(input("Ingresa nuevo valor de Defensa:  "))
                     v = int(input("Ingresa nuevo valor de Vida:  "))
+                    
                     self.mi_pokemon.ataque += a
                     self.mi_pokemon.defensa += d
                     self.mi_pokemon.vida += v
+                    
+
                     print("Valores actualizados manualmente.")
                 except ValueError:
                     print("Entrada invalida.")
+
+                self.mi_pokemon.mostrar_datos()
                 Utils.pause()
+                
             elif op == 0:
                 break
             else: 
