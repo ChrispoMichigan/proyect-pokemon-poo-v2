@@ -470,7 +470,7 @@ class App:
             print("3. Entrenamiento ")
             print("4. Combatir")
             print("5. Ver Pokemon Atrapado")
-            print("7. Pruebas de Manejo de errores
+            print("7. Pruebas de Manejo de errores")
             print("8. Salir")
             try:
                 op = int(input("Elige una opcion:  "))
@@ -792,12 +792,12 @@ class App:
                 print(a[10])
             except IndexError as e:
                 print("Se capturo IndexError: ", e)
-        elif == 3:
+        elif opt == 3:
             try:
                 x = 1 / 0
             except ZeroDivisionError as e:
                 print("Se capturo ZeroDivisionError: ", e)
-        elif == 4:
+        elif opt == 4:
             try:
                 with open("archivo_que_no_existe.txt", "r") as f:
                     _ =f.read()
