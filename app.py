@@ -1002,49 +1002,76 @@ class App:
         Utils.pause()
 
 
-    def prueb_manejo_errores(self):
-        Utils.print_title( "PRUEBAS DE MANEJO DE ERRORES ")
-        print("Estas son las pruebas controladas y muestran manejo de excepciones.")
-        print("1. ValueError")
-        print("2. IndexError")
-        print("3. ZeroDivisionError")
-        print("4. FileNotError")
-        print("5. IOError")
-        print("0. Volver")
-        opt = safe_int("Elige pruebas: ", default = 0)
-        if opt == 1:
-            try:
-                x = int("No es numero")
-            except ValueError as e:
-                print("Se capturo ValueError: ", e)
-        elif opt == 2:
-            try:
-                a = [1, 2, 3]
-                print(a[10])
-            except IndexError as e:
-                print("Se capturo IndexError: ", e)
-        elif opt == 3:
-            try:
-                x = 1 / 0
-            except ZeroDivisionError as e:
-                print("Se capturo ZeroDivisionError: ", e)
-        elif opt == 4:
-            try:
-                with open("archivo_que_no_existe.txt", "r") as f:
-                    _ =f.read()
-            except FileNotFoundError as e:
-                print("Se capturo FileNotFoundError: ", e)
-        elif opt == 5:
-            try:
-                with open("/invalid_path/test.txt", "w") as f:
-                    f.write("prueba")
-            except IOError as e:
-                print("Se capturo IOError: ", e)
-            except Exception as e:
-                print("Se capturo otra excepcion: ", e)
-        else:
-            print("Volviendo al menu.")
-        Utils.pause()
+    def pruebas_manejo_errores(self):
+        while True:
+            opt = -1
+            while True:
+                Utils.print_title( "PRUEBAS DE MANEJO DE ERRORES ")
+                print("Estas son las pruebas controladas y muestran manejo de excepciones.")
+                print("1. ValueError")
+                print("2. IndexError")
+                print("3. ZeroDivisionError")
+                print("4. FileNotError")
+                print("5. IOError")
+                print("0. Volver")
+                try:
+                    opt = int(input("Elige pruebas: "))
+                    if opt < 0 or opt > 5:
+                        raise ValueError
+                    break
+                except ValueError:
+                    print('Seleccione una opción valida')
+
+            if opt == 1:
+                try:
+                    x = int("No es numero")
+                except ValueError as e:
+                    print("Se capturo ValueError: ", e)
+
+                Utils.pause()
+                Utils.clear()
+            elif opt == 2:
+                try:
+                    a = [1, 2, 3]
+                    print(a[10])
+                except IndexError as e:
+                    print("Se capturo IndexError: ", e)
+
+                Utils.pause()
+                Utils.clear()
+            elif opt == 3:
+                try:
+                    x = 1 / 0
+                except ZeroDivisionError as e:
+                    print("Se capturo ZeroDivisionError: ", e)
+
+                Utils.pause()
+                Utils.clear()
+            elif opt == 4:
+                try:
+                    with open("archivo_que_no_existe.txt", "r") as f:
+                        _ =f.read()
+                except FileNotFoundError as e:
+                    print("Se capturo FileNotFoundError: ", e)
+
+                Utils.pause()
+                Utils.clear()
+            elif opt == 5:
+                try:
+                    with open("/invalid_path/test.txt", "w") as f:
+                        f.write("prueba")
+                except IOError as e:
+                    print("Se capturo IOError: ", e)
+                except Exception as e:
+                    print("Se capturo otra excepcion: ", e)
+
+                Utils.pause()
+                Utils.clear()
+            else:
+                print("Volviendo al menu.")
+                Utils.pause()
+                Utils.clear()
+                break
         
 if __name__ == "__main__":
     try:
