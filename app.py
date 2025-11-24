@@ -148,6 +148,50 @@ class DataBase:
         self.cursor.execute("DELETE FROM user_pokemons WHERE id_user = ?", (id_user,))
         self.conexion.commit()
 
+    def put_pokemon_by_id(self, pokemon : Agua | Electrico | Fuego | Hierba):
+        if pokemon.pokemon_id is None:
+            print("Error: El pokémon no tiene un ID válido para actualizar")
+            return
+    
+        evolution_names_json = json.dumps(pokemon.evoluciones_nombres)
+        
+        self.cursor.execute("""
+            UPDATE pokemons 
+            SET name = ?, 
+                description = ?, 
+                evolution = ?, 
+                type = ?, 
+                damage = ?, 
+                defense = ?, 
+                health = ?, 
+                level = ?, 
+                evolution_names = ?
+            WHERE id = ?
+        """, (
+            pokemon.nombre,
+            pokemon.descripcion,
+            pokemon.evolucion,
+            pokemon.tipo,
+            pokemon.ataque,
+            pokemon.defensa,
+            pokemon.vida,
+            pokemon.nivel,
+            evolution_names_json,
+            pokemon.pokemon_id
+        ))
+        
+        self.conexion.commit()
+
+    def put_user_update_by_id(self, user_id):
+        self.cursor.execute("""
+            UPDATE users 
+            SET update_at = datetime('now', 'localtime')
+            WHERE id = ?
+        """, (
+            user_id,
+        ))            
+
+        self.conexion.commit()
 class Utils:
     @staticmethod 
     def clear():
@@ -445,7 +489,7 @@ class App:
         self.id_jugador : int
         self.jugador_nombre: str = ""
         self.mi_pokemon: Agua | Fuego | Electrico | Hierba | None = None
-        self.pokemons_atrapados : List[Pokemon] = []
+        self.pokemons_atrapados : List[Agua | Fuego | Electrico | Hierba] = []
         #enemigos por defecto 2 debiles y 2 fuertes
         self.enemigos: List[Agua | Fuego | Electrico | Hierba] = self._crear_enemigos_por_defecto()
 
@@ -746,7 +790,7 @@ class App:
                 pass
             
             elif op == 9:
-                pass
+                self.__guardar_partida()
 
             elif op == 10:
                 print("Gracias por usar la Pokedex! Hasta luego.")
@@ -756,6 +800,27 @@ class App:
                 print("Opcion invalida")
             Utils.clear()
     #entrenamiento
+
+    def __guardar_partida(self):
+        if self.mi_pokemon is None:
+            print('Error: no existe pokemon inicial')
+            Utils.pause()
+            Utils.clear()
+            return
+
+        if self.mi_pokemon.pokemon_id is not None:
+            self.database.put_pokemon_by_id(self.mi_pokemon)
+        for pokemon in self.pokemons_atrapados:
+            if pokemon.pokemon_id is not None:
+                self.database.put_pokemon_by_id(self.mi_pokemon)
+            else:
+                self.database.post_pokemon_by_id_user(self.id_jugador, pokemon)
+
+        self.database.put_user_update_by_id(self.id_jugador)
+
+        Utils.print_title('Información Guardada')
+        Utils.pause()
+        Utils.clear()
 
     def menu_entrenamiento(self):
 
@@ -952,22 +1017,17 @@ class App:
         if en_vida <= 0:
             print("Has derrotado al enemigo!")
             if enemigo.vida < self.mi_pokemon.vida:
-                print("Puedes intentar atraparlo.")
-                print("1. Intentar atrapar")
+                print("Puedes elegir atraparlo.")
+                print("1. Atrapar")
                 print("2. No atrapar")
                 try:
                     sel = int(input("Elige: "))
                 except ValueError:
                     sel = 2
                 if sel == 1:
-                    prob = 0.5
-                    success = random.random() < prob
-                    if success:
-                        enemigo.atrapado = True
-                        self.pokemons_atrapados.append(enemigo)
-                        print(f"Has atrapado a {enemigo.nombre}!")
-                    else:
-                        print(f"{enemigo.nombre} ha escapado.")
+                    enemigo.atrapado = True
+                    self.pokemons_atrapados.append(enemigo)
+                    print(f"Has atrapado a {enemigo.nombre}!")
                 else:
                     print("Decides no atrapar.")
             else:
