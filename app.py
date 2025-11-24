@@ -67,12 +67,12 @@ class DataBase:
         # Confirmar cambios
         self.conexion.commit()
 
-    def get_all_users(self):
+    def get_all_users(self) -> List[Tuple]:
         self.cursor.execute('SELECT * FROM users')
         partidas = self.cursor.fetchall()
         return partidas
     
-    def post_new_user(self, user : str) -> dict | None:
+    def post_new_user(self, user : str) -> Tuple | None:
         self.cursor.execute("INSERT INTO users (user) VALUES(?)", (user,))
         self.conexion.commit()
         user_id = self.cursor.lastrowid
@@ -82,15 +82,42 @@ class DataBase:
         
         return self.get_user_by_id(user_id)
 
-    def get_user_by_id(self, id : int):
+    def get_user_by_id(self, id : int) -> Tuple:
         self.cursor.execute("SELECT id, user, update_at FROM users WHERE id = ?", (id,))
         usuario = self.cursor.fetchone()
         return usuario
     
-    def get_user_by_name(self, name : str):
+    def get_user_by_name(self, name : str) -> Tuple:
         self.cursor.execute("SELECT id, user, update_at FROM users WHERE user = ?", (name,))
         usuario = self.cursor.fetchone()
         return usuario
+    
+    def post_pokemon_by_id_user(self, id_user : int, pokemon : Agua | Electrico | Fuego | Hierba):
+        self.cursor.execute("INSERT INTO pokemons (name, description, evolution, type, damage, defense, health, level) VALUES(?, ?, ?, ?, ?, ?, ?, ?)", 
+            (
+                pokemon.nombre,
+                pokemon.descripcion,
+                pokemon.evolucion,
+                pokemon.tipo,
+                pokemon.ataque,
+                pokemon.defensa,
+                pokemon.vida,
+                pokemon.nivel,
+            )
+        )
+        self.conexion.commit()
+        pokemon_id = self.cursor.lastrowid
+
+        if pokemon_id is None:
+            return
+        
+        self.cursor.execute("INSERT INTO user_pokemons (id_user, id_pokemon) VALUES(?, ?)", (id_user, pokemon_id,))
+        self.conexion.commit()
+
+    def get_pokemon_by_id(self, id_pokemon : int) -> Tuple:
+        self.cursor.execute("SELECT * FROM pokemons WHERE id = ?", (id_pokemon,))
+        pokemon = self.cursor.fetchone()
+        return pokemon
 
 class Utils:
     @staticmethod 
@@ -256,6 +283,7 @@ class Agua(Pokemon):
     def __init__(self, nombre, descripcion, ataque, defensa, vida, nivel, ataque_especial="Hidrobomba", evoluciones_nombres=None):
         super().__init__( nombre, descripcion, ataque, defensa, vida, nivel, evoluciones_nombres=evoluciones_nombres or ["Squirtle", "Wartortle", "Blastoise"])
         self.ataque_especial = ataque_especial
+        self.tipo = 'Agua'
 
     def actualizar(self):
         self.defensa += 10
@@ -265,6 +293,7 @@ class Fuego(Pokemon):
     def __init__(self, nombre, descripcion, ataque, defensa, vida, nivel, ataque_especial="Lanzallamas", evoluciones_nombres=None):
         super().__init__(nombre, descripcion, ataque, defensa, vida, nivel, evoluciones_nombres=evoluciones_nombres or ["Charmander", "Charmeleon", "Charizard"])
         self.ataque_especial = ataque_especial
+        self.tipo = 'Fuego'
 
     def actualizar(self):
         self.ataque += 10
@@ -284,6 +313,7 @@ class Electrico(Pokemon):
             evoluciones_nombres=evoluciones_nombres or ["Pichu", "Pikachu", "Raichu"]
         )
         self.ataque_especial = ataque_especial
+        self.tipo = 'Electrico'
 
     def actualizar(self):
         self.vida += 10
@@ -302,6 +332,7 @@ class Hierba(Pokemon):
             evoluciones_nombres=evoluciones_nombres or ["Bulbasaur", "Ivysaur", "Venusaur"]
         )
         self.ataque_especial = ataque_especial
+        self.tipo = 'Hierba'
 
     def actualizar(self):
         self.ataque += 5
@@ -342,7 +373,7 @@ class App:
     def __init__(self):
         self.id_jugador : int
         self.jugador_nombre: str = ""
-        self.mi_pokemon: Optional[Pokemon] = None
+        self.mi_pokemon: Agua | Fuego | Electrico | Hierba | None = None
         self.pokemons_atrapados : List[Pokemon] = []
         #enemigos por defecto 2 debiles y 2 fuertes
         self.enemigos: List[Pokemon] = self._crear_enemigos_por_defecto()
@@ -445,6 +476,13 @@ class App:
                     exit(0)
                 if 1 <= sel <= len(opciones):
                     self.mi_pokemon = opciones[sel - 1][1]
+
+                    # Añadir pokemon a jugador en la base de datos
+                    self.database.post_pokemon_by_id_user(self.id_jugador, opciones[sel - 1][1])
+                    
+                    if self.mi_pokemon is None:
+                        raise ValueError
+
                     print(f"\nHas elegido a {self.mi_pokemon.nombre}!")
                     Utils.pause()
                     Utils.clear()
