@@ -134,6 +134,20 @@ class DataBase:
         """, (id_user,))
         pokemons = self.cursor.fetchall()
         return pokemons
+    
+    def delete_user_by_id(self, id_user: int):
+
+        pokemons = self.get_all_pokemons_by_user_id(id_user)
+        for pokemon in pokemons:
+            self.cursor.execute("DELETE FROM pokemons WHERE id = ?", (pokemon[0],))
+            self.conexion.commit()
+
+        self.cursor.execute("DELETE FROM users WHERE id = ?", (id_user,))
+        self.conexion.commit()
+
+        self.cursor.execute("DELETE FROM user_pokemons WHERE id_user = ?", (id_user,))
+        self.conexion.commit()
+
 class Utils:
     @staticmethod 
     def clear():
@@ -458,9 +472,7 @@ class App:
     def __cargar_pokemos_desde_db(self):
         pokemons_db = self.database.get_all_pokemons_by_user_id(self.id_jugador)
         pokemons = []
-        print(pokemons_db)
-        print()
-        Utils.pause()
+
         if len(pokemons_db) == 0:
             self.elegir_inicial()
             return
@@ -530,22 +542,25 @@ class App:
         self.mi_pokemon = pokemons[0]
         del pokemons[0]
         self.pokemons_atrapados = pokemons
-        
-        Utils.pause()
 
     def __seleccionar_guardado(self):
-        usuarios = self.database.get_all_users()
-        Utils.print_title('Seleccione una partida')
-
         while True:
+            usuarios = self.database.get_all_users()
+            Utils.print_title('Seleccione una partida')
             for i, usuario in enumerate(usuarios):
                 print(f'[{i + 1}] - {usuario[1]} - {usuario[2]}')
 
             print(f'[{len(usuarios) + 1}] - Crear nueva partida')
+            print(f'[{len(usuarios) + 2}] - Eliminar una partida')
 
             try:
                 user_option = int(input('Seleccione el usuario\t'))
-                if user_option > 0 and user_option <= len(usuarios) + 1:
+                if user_option > 0 and user_option <= len(usuarios) + 2:
+                    if len(usuarios) + 2 == user_option:
+                        Utils.clear()
+                        self.__eliminar_partida()
+                        Utils.clear()
+                        continue
                     break
                 raise ValueError
             except ValueError:
@@ -563,12 +578,36 @@ class App:
             Utils.pause()
             Utils.clear()
 
+    def __eliminar_partida(self):
+        usuarios = self.database.get_all_users()
+        Utils.print_title('Seleccione una partida a eliminar')
+
+        while True:
+            for i, usuario in enumerate(usuarios):
+                print(f'[{i + 1}] - {usuario[1]} - {usuario[2]}')
+
+            print(f'[{len(usuarios) + 1}] - Cancelar')
+            try:
+                user_delete = int(input('Seleccione el usuario\t'))
+                if user_delete > 0 and user_delete <= len(usuarios) + 1:
+                    break
+                raise ValueError
+            except ValueError:
+                print('Selccione una opción válida')
+                Utils.pause()
+                Utils.clear()
+
+        if user_delete > 0 and user_delete <= len(usuarios):
+            self.database.delete_user_by_id(usuarios[user_delete - 1][0])
+            Utils.print_title('Usuario borrado correctamente')
+            Utils.pause()
+
     def __crear_usuario(self):
         nombre = ''
         while True:
  
-            nombre = input("Ingresa tu nombre: ").strip()
-            
+            nombre = input("Ingresa tu nombre:\t").strip()
+
             if nombre == '':
                 print('Inserte un nombre de usuario válido')
                 Utils.pause()
