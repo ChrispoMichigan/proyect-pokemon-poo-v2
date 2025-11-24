@@ -149,6 +149,9 @@ class DataBase:
         self.cursor.execute("DELETE FROM user_pokemons WHERE id_user = ?", (id_user,))
         self.conexion.commit()
 
+        self.cursor.execute("DELETE FROM battles WHERE id_user = ?", (id_user,))
+        self.conexion.commit()
+
     def put_pokemon_by_id(self, pokemon : Agua | Electrico | Fuego | Hierba):
         if pokemon.pokemon_id is None:
             print("Error: El pokémon no tiene un ID válido para actualizar")
@@ -747,6 +750,61 @@ class App:
         e4 = Agua("Enemigo Debil 2", "Aguas calmadas", ataque=15, defensa=18, vida=70, nivel=4)
         return [e1, e2, e3, e4]
 
+    def __registros_combates(self):
+        registros = self.database.get_all_combates_by_user_id(self.id_jugador)
+        
+        if len(registros) == 0:
+            Utils.print_title('No hay combates registrados')
+            Utils.pause()
+            return
+            
+        while True:
+            Utils.print_title('Selecciona el combate a ver')
+            for i, combate in enumerate(registros):
+                print(f'[{i+1}] : {combate[2][9:]}')  # Mostrar sin 'combates\'
+            print(f'[{len(registros)+1}] - Salir')
+            
+            try:
+                opc = int(input('Selecciona una opción:\t'))
+                if opc < 1 or opc > len(registros) + 1:
+                    raise ValueError
+                
+                if opc == len(registros) + 1:
+                    return
+                
+                # Leer y mostrar el archivo de combate seleccionado
+                ruta = registros[opc - 1][2]
+                self.__mostrar_combate(ruta)
+                Utils.pause()
+                Utils.clear()
+                
+            except ValueError:
+                print('Opción no válida, intente de nuevo')
+                Utils.pause()
+                Utils.clear()
+
+    def __mostrar_combate(self, ruta: str):
+        """Muestra el contenido del archivo de combate línea por línea"""
+        try:
+            Utils.clear()
+            Utils.print_title('CONTENIDO DEL COMBATE')
+            
+            with open(ruta, 'r', encoding='utf-8') as archivo:
+                for linea in archivo:
+                    print(linea.rstrip())  # rstrip() para quitar salto de línea extra
+                    
+        except FileNotFoundError:
+            Utils.print_title('ARCHIVO NO ENCONTRADO')
+            print(f"El archivo {ruta} no existe.")
+            print("Es posible que haya sido movido o eliminado.")
+            
+        except Exception as e:
+            Utils.print_title('ERROR AL LEER ARCHIVO')
+            print(f"Error al leer el archivo: {e}")
+            
+        print(f"\n{'='*50}")
+        print("Fin del registro de combate")
+
     def main_loop(self):
         while True:
             Utils.print_title("MENU PRINCIPAL")
@@ -813,7 +871,7 @@ class App:
                 self.pruebas_manejo_errores()
 
             elif op == 8:
-                pass
+                self.__registros_combates()
             
             elif op == 9:
                 self.__guardar_partida()
@@ -1111,7 +1169,7 @@ class App:
             Utils.print_title(f"Combate guardado en: {ruta_archivo}")
 
             self.database.post_combate(self.id_jugador, ruta_archivo)
-            
+
         except Exception as e:
             print(f"Error al guardar el combate: {e}")
 
