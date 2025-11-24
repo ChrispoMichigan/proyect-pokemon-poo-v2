@@ -2,8 +2,79 @@ from __future__ import annotations
 import random 
 from abc import ABC, abstractmethod 
 from typing import List, Optional, Tuple
-import os 
+import os
+import sqlite3
 
+
+'''
+#*
+#* Todas las operaciónes de la base de datos
+#*
+'''
+class DataBase:
+    def __init__(self) -> None:
+        self.conexion = sqlite3.connect('pokedex.db')
+        self.cursor = self.conexion.cursor()
+        self.__init_tables()
+
+    def __init_tables(self):
+        # Tabla de usuarios
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user VARCHAR(50) NOT NULL,
+                update_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+        
+        # Tabla de pokémons
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pokemons(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(100) NOT NULL,
+                description VARCHAR(255),
+                evolution INTEGER DEFAULT 1,
+                type VARCHAR(20) CHECK(type IN ('Agua', 'Fuego', 'Electrico', 'Hierba')),
+                damage INTEGER NOT NULL,
+                defense INTEGER NOT NULL,
+                health INTEGER NOT NULL,
+                level INTEGER DEFAULT 1
+            )
+            """)
+        
+        # Tabla intermedia usuario-pokémons
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_pokemons(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id_user INTEGER NOT NULL,
+                id_pokemon INTEGER NOT NULL,
+                FOREIGN KEY (id_user) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (id_pokemon) REFERENCES pokemons(id) ON DELETE CASCADE
+            )
+            """)
+        
+        # Tabla de batallas
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS battles(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id_user INTEGER NOT NULL,
+                txt_route VARCHAR(500) NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (id_user) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """)
+        
+        # Confirmar cambios
+        self.conexion.commit()
+
+    def get_partidas(self):
+        self.cursor.execute('SELECT * FROM users')
+        partidas = self.cursor.fetchall()
+        return partidas
+    
+    def post_new_user(self, user : str):
+        self.cursor.execute("INSERT INTO users (user) VALUES(?)", (user,))
+        self.conexion.commit()
 
 class Utils:
     @staticmethod 
@@ -261,7 +332,6 @@ class App:
         Utils.clear()
         self.bienvenida()
         self.main_loop()
-
 
 
     def bienvenida(self):
