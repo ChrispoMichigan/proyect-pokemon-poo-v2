@@ -6,6 +6,7 @@ import os
 import sqlite3
 import json
 from datetime import datetime
+from copy import deepcopy
 
 
 '''
@@ -805,6 +806,42 @@ class App:
         print(f"\n{'='*50}")
         print("Fin del registro de combate")
 
+    def __cambiar_pokemon(self):
+        if len(self.pokemons_atrapados) == 0:
+            Utils.print_title('No tienes pokemones atrapados')
+            Utils.pause()
+            Utils.clear
+            return
+        
+        while True:
+            Utils.print_title('Selecciona el pokemon a usar')
+            for i, pokemon in enumerate(self.pokemons_atrapados):
+                print(f'{i + 1} - {pokemon.nombre}')
+            print(f'{len(self.pokemons_atrapados) + 1} - Salir')
+            try:
+                opc = int(input('Seleccione\t'))
+                if opc < 1 or opc > len(self.pokemons_atrapados) + 1:
+                    raise ValueError
+                break
+            except ValueError:
+                print('Seleccione una opción válida')
+                Utils.pause()
+                Utils.clear()
+
+        if len(self.pokemons_atrapados) + 1 == opc:
+            return
+        
+        pokemon_anterior = deepcopy(self.mi_pokemon)
+        if pokemon_anterior is None:
+            return
+        self.mi_pokemon = self.pokemons_atrapados[opc - 1]
+        del self.pokemons_atrapados[opc - 1]
+        self.pokemons_atrapados.append(pokemon_anterior)
+        Utils.print_title(f'Pokemones cambiado a {self.mi_pokemon.nombre}')
+        Utils.pause()
+        Utils.clear
+
+
     def main_loop(self):
         while True:
             Utils.print_title("MENU PRINCIPAL")
@@ -817,10 +854,12 @@ class App:
             print("7. Pruebas de Manejo de errores")
             print("8. Registros de batallas")
             print("9. Guardar partida")
-            print("10. Salir")
+            print("10. Cambiar de partida")
+            print("11. Cambiar pokemon principal")
+            print("12. Salir")
             try:
                 op = int(input("Elige una opcion:  "))
-                if op < 1 or op > 10:
+                if op < 1 or op > 12:
                     raise ValueError
             except ValueError:
                 print("Ingresa un numero valido")
@@ -877,6 +916,13 @@ class App:
                 self.__guardar_partida()
 
             elif op == 10:
+                self.__seleccionar_guardado()
+                self.__cargar_pokemos_desde_db()
+            
+            elif op == 11:
+                self.__cambiar_pokemon()
+
+            elif op == 12:
                 print("Gracias por usar la Pokedex! Hasta luego.")
                 break
 
