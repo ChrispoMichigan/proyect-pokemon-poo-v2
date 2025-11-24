@@ -470,8 +470,8 @@ class App:
             print("3. Entrenamiento ")
             print("4. Combatir")
             print("5. Ver Pokemon Atrapado")
-            print("6. Crear Pokemon Enemigo")
-            print("7. Salir")
+            print("7. Pruebas de Manejo de errores
+            print("8. Salir")
             try:
                 op = int(input("Elige una opcion:  "))
             except ValueError:
@@ -479,7 +479,6 @@ class App:
                 Utils.pause()
                 Utils.clear()
                 continue
-
 
             Utils.clear()
             if op == 1:
@@ -509,14 +508,17 @@ class App:
                 else:
                     print("No tienes Pokemon.")
                 Utils.pause()
-
+                
             elif op == 5:
                 self.VerPokemonsAtrapados()
 
             elif op == 6:
                 self.crear_pokemon_enemigo_manual()
-
+                
             elif op == 7:
+                self.pruebas_manejo_errores()
+
+            elif op == 8:
                 print("Gracias por usar la Pokedex! Hasta luego.")
                 break
 
@@ -768,6 +770,51 @@ class App:
         print(f"Enemigo {nuevo.nombre} creado y añadido a la lista de enemigos. ")
         Utils.pause()
 
+
+    def prueb_manejo_errores(self):
+        Utils.print_title( "PRUEBAS DE MANEJO DE ERRORES ")
+        print("Estas son las pruebas controladas y muestran manejo de excepciones.")
+        print("1. ValueError")
+        print("2. IndexError")
+        print("3. ZeroDivisionError")
+        print("4. FileNotError")
+        print("5. IOError")
+        print("0. Volver")
+        opt = safe_int("Elige pruebas: ", default = 0)
+        if opt == 1:
+            try:
+                x = int("No es numero")
+            except ValueError as e:
+                print("Se capturo ValueError: ", e)
+        elif opt == 2:
+            try:
+                a = [1, 2, 3]
+                print(a[10])
+            except IndexError as e:
+                print("Se capturo IndexError: ", e)
+        elif == 3:
+            try:
+                x = 1 / 0
+            except ZeroDivisionError as e:
+                print("Se capturo ZeroDivisionError: ", e)
+        elif == 4:
+            try:
+                with open("archivo_que_no_existe.txt", "r") as f:
+                    _ =f.read()
+            except FileNotFoundError as e:
+                print("Se capturo FileNotFoundError: ", e)
+        elif opt == 5:
+            try:
+                with open("/invalid_path/test.txt", "w") as f:
+                    f.write("prueba")
+            except IOError as e:
+                print("Se capturo IOError: ", e)
+            except Exception as e:
+                print("Se capturo otra excepcion: ", e)
+        else:
+            print("Volviendo al menu.")
+        Utils.pause()
+        
 if __name__ == "__main__":
     try:
         App()
