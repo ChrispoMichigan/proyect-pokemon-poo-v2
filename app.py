@@ -447,7 +447,7 @@ class App:
         self.mi_pokemon: Agua | Fuego | Electrico | Hierba | None = None
         self.pokemons_atrapados : List[Pokemon] = []
         #enemigos por defecto 2 debiles y 2 fuertes
-        self.enemigos: List[Pokemon] = self._crear_enemigos_por_defecto()
+        self.enemigos: List[Agua | Fuego | Electrico | Hierba] = self._crear_enemigos_por_defecto()
 
         # Crear base de datos
         self.database = DataBase()
@@ -675,7 +675,7 @@ class App:
             except ValueError:
                 print("Ingresa un numero valido.")
 
-    def _crear_enemigos_por_defecto(self) -> List[Pokemon]:
+    def _crear_enemigos_por_defecto(self) -> List[Agua | Fuego | Electrico | Hierba]:
         e1 = Fuego("Enemigo Fuerte 1", "Firme y peligroso", ataque=80, defensa=80, vida=200, nivel=50)
         e2 = Electrico("Enemigo Fuerte 2", "Agil y potente", ataque=70, defensa=60, vida=180, nivel=48)
         e3 = Hierba("Enemigo Debil 1", "Tranquilo", ataque=20, defensa=20, vida=80, nivel=5)
@@ -748,6 +748,10 @@ class App:
     #entrenamiento
 
     def menu_entrenamiento(self):
+
+        if self.mi_pokemon is None:
+            return
+
         while True:
             Utils.print_title("ENTRENAMIENTO")
             print("1. Entrenamiento Normal")
@@ -816,7 +820,7 @@ class App:
 
 #combate u atrapado
 
-    def select_enemy(self) -> Pokemon:
+    def select_enemy(self) -> Agua | Fuego | Hierba | Electrico:
         if not self.enemigos:
             self.enemigos = self._crear_enemigos_por_defecto()
         enemy = random.choice(self.enemigos)
@@ -849,11 +853,13 @@ class App:
                 print("Seleccion invalida.")
                 Utils.pause()
                 return
-
-#combate por turnos
+        #combate por turnos
         self.combate_con_enemigo(enemigo)
 
-    def combate_con_enemigo(self, enemigo: Pokemon):
+    def combate_con_enemigo(self, enemigo: Agua | Fuego | Hierba | Electrico):
+        if self.mi_pokemon is None:
+            return
+
         mi_def = self.mi_pokemon.defensa
         mi_vida = self.mi_pokemon.vida
         en_def = enemigo.defensa
