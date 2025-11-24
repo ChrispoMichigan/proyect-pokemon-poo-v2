@@ -566,7 +566,14 @@ class App:
     def __crear_usuario(self):
         nombre = ''
         while True:
+ 
             nombre = input("Ingresa tu nombre: ").strip()
+            
+            if nombre == '':
+                print('Inserte un nombre de usuario válido')
+                Utils.pause()
+                Utils.clear()
+                continue
 
             user_found = self.database.get_user_by_name(nombre)
             
