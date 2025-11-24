@@ -22,8 +22,8 @@ class DataBase:
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS users(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user VARCHAR(50) NOT NULL,
-                update_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                user VARCHAR(50) NOT NULL UNIQUE,
+                update_at DATETIME DEFAULT (datetime('now', 'localtime'))
             )
             """)
         
@@ -59,7 +59,7 @@ class DataBase:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 id_user INTEGER NOT NULL,
                 txt_route VARCHAR(500) NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                created_at DATETIME DEFAULT (datetime('now', 'localtime')),
                 FOREIGN KEY (id_user) REFERENCES users(id) ON DELETE CASCADE
             )
             """)
@@ -67,14 +67,30 @@ class DataBase:
         # Confirmar cambios
         self.conexion.commit()
 
-    def get_partidas(self):
+    def get_all_users(self):
         self.cursor.execute('SELECT * FROM users')
         partidas = self.cursor.fetchall()
         return partidas
     
-    def post_new_user(self, user : str):
+    def post_new_user(self, user : str) -> dict | None:
         self.cursor.execute("INSERT INTO users (user) VALUES(?)", (user,))
         self.conexion.commit()
+        user_id = self.cursor.lastrowid
+
+        if user_id is None:
+            return None
+        
+        return self.get_user_by_id(user_id)
+
+    def get_user_by_id(self, id : int):
+        self.cursor.execute("SELECT id, user, update_at FROM users WHERE id = ?", (id,))
+        usuario = self.cursor.fetchone()
+        return usuario
+    
+    def get_user_by_name(self, name : str):
+        self.cursor.execute("SELECT id, user, update_at FROM users WHERE user = ?", (name,))
+        usuario = self.cursor.fetchone()
+        return usuario
 
 class Utils:
     @staticmethod 
@@ -324,24 +340,91 @@ def aplicar_daño(atacante_val: int, defensor_def: int, defensor_vida: int) -> T
 
 class App:
     def __init__(self):
+        self.id_jugador : int
         self.jugador_nombre: str = ""
         self.mi_pokemon: Optional[Pokemon] = None
         self.pokemons_atrapados : List[Pokemon] = []
         #enemigos por defecto 2 debiles y 2 fuertes
         self.enemigos: List[Pokemon] = self._crear_enemigos_por_defecto()
+
+        # Crear base de datos
+        self.database = DataBase()
         Utils.clear()
-        self.bienvenida()
+        self.__init_app()
         self.main_loop()
 
+    def __init_app(self):
+        self.__bienvenida()
 
-    def bienvenida(self):
-        Utils.print_title("Bienvenido a la POKEDEX")
-        nombre = input("Ingresa tu nombre: ").strip()
-        self.jugador_nombre = nombre if nombre else "Entrenador"
-        print(f"\nHola, {self.jugador_nombre}! Aun no tienees Pokemon. Debes elegir uno.")
+        if len(self.database.get_all_users()) == 0:
+            Utils.print_title('No existen partidas guardas, crea una')
+            Utils.pause()
+            Utils.clear()
+            self.__crear_usuario()
+        else:
+            self.__seleccionar_guardado()
+
+        Utils.clear()
+
+    def __seleccionar_guardado(self):
+        usuarios = self.database.get_all_users()
+        Utils.print_title('Seleccione una partida')
+
+        while True:
+            for i, usuario in enumerate(usuarios):
+                print(f'[{i + 1}] - {usuario[1]} - {usuario[2]}')
+
+            print(f'[{len(usuarios) + 1}] - Crear nueva partida')
+
+            try:
+                user_option = int(input('Seleccione el usuario\t'))
+                if user_option > 0 and user_option <= len(usuarios) + 1:
+                    break
+                raise ValueError
+            except ValueError:
+                print('Selccione una opción válida')
+                Utils.pause()
+                Utils.clear()
+
+        if len(usuarios) + 1 == user_option:
+            Utils.clear()
+            self.__crear_usuario()
+        else:
+            self.id_jugador = usuarios[user_option - 1][0]
+            self.jugador_nombre = usuarios[user_option - 1][1]
+            Utils.print_title('Usuario cargado correctamente')
+            Utils.pause()
+            Utils.clear()
+
+    def __crear_usuario(self):
+        nombre = ''
+        while True:
+            nombre = input("Ingresa tu nombre: ").strip()
+
+            user_found = self.database.get_user_by_name(nombre)
+            
+            if user_found is None:
+                break
+            Utils.print_title('Este usuarios ya existe, escriba otro')
+            Utils.pause()
+            Utils.clear()
+
+        new_user = self.database.post_new_user(nombre)
+        
+        if new_user is None:
+            return
+
+        self.id_jugador = new_user[0]
+        self.jugador_nombre = new_user[1]
+        print(f"\nHola, {self.jugador_nombre}! Aun no tienes Pokemon. Debes elegir uno.")
         Utils.pause()
         Utils.clear()
         self.elegir_inicial()
+
+    def __bienvenida(self):
+        Utils.print_title("Bienvenido a la POKEDEX")
+        Utils.pause()
+        Utils.clear()
 
     def elegir_inicial(self):
         Utils.print_title("Elege tu Pokemon inicial")
