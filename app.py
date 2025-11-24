@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 import os
 import sqlite3
+import json
 
 
 '''
@@ -38,7 +39,8 @@ class DataBase:
                 damage INTEGER NOT NULL,
                 defense INTEGER NOT NULL,
                 health INTEGER NOT NULL,
-                level INTEGER DEFAULT 1
+                level INTEGER DEFAULT 1,
+                evolution_names TEXT NOT NULL
             )
             """)
         
@@ -93,7 +95,10 @@ class DataBase:
         return usuario
     
     def post_pokemon_by_id_user(self, id_user : int, pokemon : Agua | Electrico | Fuego | Hierba):
-        self.cursor.execute("INSERT INTO pokemons (name, description, evolution, type, damage, defense, health, level) VALUES(?, ?, ?, ?, ?, ?, ?, ?)", 
+
+        evolution_names_json = json.dumps(pokemon.evoluciones_nombres)
+
+        self.cursor.execute("INSERT INTO pokemons (name, description, evolution, type, damage, defense, health, level, evolution_names) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", 
             (
                 pokemon.nombre,
                 pokemon.descripcion,
@@ -103,6 +108,7 @@ class DataBase:
                 pokemon.defensa,
                 pokemon.vida,
                 pokemon.nivel,
+                evolution_names_json
             )
         )
         self.conexion.commit()
@@ -118,7 +124,16 @@ class DataBase:
         self.cursor.execute("SELECT * FROM pokemons WHERE id = ?", (id_pokemon,))
         pokemon = self.cursor.fetchone()
         return pokemon
-
+    
+    def get_all_pokemons_by_user_id(self, id_user: int) -> List[Tuple]:
+        self.cursor.execute("""
+            SELECT p.id, p.name, p.description, p.evolution, p.type, p.damage, p.defense, p.health, p.level, p.evolution_names
+            FROM pokemons p
+            INNER JOIN user_pokemons up ON p.id = up.id_pokemon
+            WHERE up.id_user = ?
+        """, (id_user,))
+        pokemons = self.cursor.fetchall()
+        return pokemons
 class Utils:
     @staticmethod 
     def clear():
@@ -148,8 +163,11 @@ class PokemonBase(ABC):
         vida: int = 0,
         nivel: int = 1,
         evolucion: int = 1,
-        atrapado: bool = False):
+        atrapado: bool = False,
+        pokemon_id: int | None = None
+        ):
 
+        self.pokemon_id = pokemon_id
         self.nombre: str = nombre
         self.descripcion: str = descripcion
         self.ataque: int = max(0, int(ataque))
@@ -216,10 +234,11 @@ class Pokemon(PokemonBase):
         nivel: int = 1,
         evolucion: int = 1,
         atrapado: bool = False,
-        evoluciones_nombres: Optional[List[str]] = None
+        evoluciones_nombres: Optional[List[str]] = None,
+        pokemon_id: int | None = None
         ):
         
-        super().__init__(nombre, descripcion, ataque, defensa, vida, nivel, evolucion, atrapado)
+        super().__init__(nombre, descripcion, ataque, defensa, vida, nivel, evolucion, atrapado, pokemon_id)
 
         if evoluciones_nombres:
             self.evoluciones_nombres = evoluciones_nombres[:3]
@@ -280,8 +299,22 @@ class Pokemon(PokemonBase):
 #subclases especializadas
 
 class Agua(Pokemon):
-    def __init__(self, nombre, descripcion, ataque, defensa, vida, nivel, ataque_especial="Hidrobomba", evoluciones_nombres=None):
-        super().__init__( nombre, descripcion, ataque, defensa, vida, nivel, evoluciones_nombres=evoluciones_nombres or ["Squirtle", "Wartortle", "Blastoise"])
+
+    def __init__(self, 
+                nombre: str = "Sin Pokemon", 
+                descripcion: str = "No descripcion", 
+                ataque: int = 0, 
+                defensa: int = 0, 
+                vida: int = 0, 
+                nivel: int = 1,
+                evolucion: int = 1, 
+                atrapado: bool = False, 
+                evoluciones_nombres: List[str] | None = ["Squirtle", "Wartortle", "Blastoise"], 
+                pokemon_id: int | None = None,
+                ataque_especial="Hidrobomba"
+            ):
+        super().__init__(nombre, descripcion, ataque, defensa, vida, nivel, evolucion, atrapado, evoluciones_nombres, pokemon_id)
+
         self.ataque_especial = ataque_especial
         self.tipo = 'Agua'
 
@@ -290,8 +323,22 @@ class Agua(Pokemon):
         print(f"{self.nombre} (Agua) se refresca: +10 defensa.")
 
 class Fuego(Pokemon):
-    def __init__(self, nombre, descripcion, ataque, defensa, vida, nivel, ataque_especial="Lanzallamas", evoluciones_nombres=None):
-        super().__init__(nombre, descripcion, ataque, defensa, vida, nivel, evoluciones_nombres=evoluciones_nombres or ["Charmander", "Charmeleon", "Charizard"])
+
+    def __init__(self, 
+                nombre: str = "Sin Pokemon", 
+                descripcion: str = "No descripcion", 
+                ataque: int = 0, 
+                defensa: int = 0, 
+                vida: int = 0, 
+                nivel: int = 1,
+                evolucion: int = 1, 
+                atrapado: bool = False, 
+                evoluciones_nombres: List[str] | None = ["Charmander", "Charmeleon", "Charizard"], 
+                pokemon_id: int | None = None,
+                ataque_especial: str = "Lanzallamas"
+            ):
+        super().__init__(nombre, descripcion, ataque, defensa, vida, nivel, evolucion, atrapado, evoluciones_nombres, pokemon_id)
+
         self.ataque_especial = ataque_especial
         self.tipo = 'Fuego'
 
@@ -301,17 +348,22 @@ class Fuego(Pokemon):
 
 
 class Electrico(Pokemon):
-    def __init__(self, nombre, descripcion, ataque, defensa, vida, nivel, ataque_especial="Impactrueno", evoluciones_nombres=None):
 
-        super().__init__(
-            nombre,
-            descripcion,
-            ataque,
-            defensa,
-            vida,
-            nivel,
-            evoluciones_nombres=evoluciones_nombres or ["Pichu", "Pikachu", "Raichu"]
-        )
+    def __init__(self, 
+                nombre: str = "Sin Pokemon", 
+                descripcion: str = "No descripcion", 
+                ataque: int = 0, 
+                defensa: int = 0, 
+                vida: int = 0, 
+                nivel: int = 1,
+                evolucion: int = 1, 
+                atrapado: bool = False, 
+                evoluciones_nombres: List[str] | None = ["Pichu", "Pikachu", "Raichu"], 
+                pokemon_id: int | None = None,
+                ataque_especial: str = "Impactrueno"
+            ):
+        super().__init__(nombre, descripcion, ataque, defensa, vida, nivel, evolucion, atrapado, evoluciones_nombres, pokemon_id)
+
         self.ataque_especial = ataque_especial
         self.tipo = 'Electrico'
 
@@ -320,17 +372,22 @@ class Electrico(Pokemon):
         print(f"{self.nombre} (Electrico) se carga: +10 vida.")
 
 class Hierba(Pokemon):
-    def __init__(self, nombre, descripcion, ataque, defensa, vida, nivel, ataque_especial="Rayo Solar", evoluciones_nombres=None):
 
-        super().__init__(
-            nombre,
-            descripcion,
-            ataque,
-            defensa,
-            vida,
-            nivel,
-            evoluciones_nombres=evoluciones_nombres or ["Bulbasaur", "Ivysaur", "Venusaur"]
-        )
+    def __init__(self, 
+                nombre: str = "Sin Pokemon", 
+                descripcion: str = "No descripcion", 
+                ataque: int = 0, 
+                defensa: int = 0, 
+                vida: int = 0, 
+                nivel: int = 1,
+                evolucion: int = 1, 
+                atrapado: bool = False, 
+                evoluciones_nombres: List[str] | None = ["Bulbasaur", "Ivysaur", "Venusaur"], 
+                pokemon_id: int | None = None,
+                ataque_especial: str = "Rayo Solar"
+            ):
+        super().__init__(nombre, descripcion, ataque, defensa, vida, nivel, evolucion, atrapado, evoluciones_nombres, pokemon_id)
+
         self.ataque_especial = ataque_especial
         self.tipo = 'Hierba'
 
@@ -394,8 +451,87 @@ class App:
             self.__crear_usuario()
         else:
             self.__seleccionar_guardado()
+            self.__cargar_pokemos_desde_db()
 
         Utils.clear()
+
+    def __cargar_pokemos_desde_db(self):
+        pokemons_db = self.database.get_all_pokemons_by_user_id(self.id_jugador)
+        pokemons = []
+        print(pokemons_db)
+        print()
+        Utils.pause()
+        if len(pokemons_db) == 0:
+            self.elegir_inicial()
+            return
+        
+        for pokemon in pokemons_db:
+            if pokemon[4] == 'Agua':
+                pokemon = Agua(
+                    nombre=pokemon[1],
+                    descripcion=pokemon[2],
+                    ataque=pokemon[5],
+                    defensa=pokemon[6],
+                    vida=pokemon[7],
+                    nivel=pokemon[8],
+                    evolucion=pokemon[3],
+                    atrapado=True,
+                    evoluciones_nombres=json.loads(pokemon[9]),
+                    pokemon_id=pokemon[0]
+                )
+                pokemons.append(pokemon)
+                continue
+            if pokemon[4] == 'Fuego':
+                pokemon = Fuego(
+                    nombre=pokemon[1],
+                    descripcion=pokemon[2],
+                    ataque=pokemon[5],
+                    defensa=pokemon[6],
+                    vida=pokemon[7],
+                    nivel=pokemon[8],
+                    evolucion=pokemon[3],
+                    atrapado=True,
+                    evoluciones_nombres=json.loads(pokemon[9]),
+                    pokemon_id=pokemon[0]
+                )
+                pokemons.append(pokemon)
+                continue
+            if pokemon[4] == 'Hierba':
+                pokemon = Hierba(
+                    nombre=pokemon[1],
+                    descripcion=pokemon[2],
+                    ataque=pokemon[5],
+                    defensa=pokemon[6],
+                    vida=pokemon[7],
+                    nivel=pokemon[8],
+                    evolucion=pokemon[3],
+                    atrapado=True,
+                    evoluciones_nombres=json.loads(pokemon[9]),
+                    pokemon_id=pokemon[0]
+                )
+                pokemons.append(pokemon)
+                continue
+            if pokemon[4] == 'Electrico':
+                pokemon = Electrico(
+                    nombre=pokemon[1],
+                    descripcion=pokemon[2],
+                    ataque=pokemon[5],
+                    defensa=pokemon[6],
+                    vida=pokemon[7],
+                    nivel=pokemon[8],
+                    evolucion=pokemon[3],
+                    atrapado=True,
+                    evoluciones_nombres=json.loads(pokemon[9]),
+                    pokemon_id=pokemon[0]
+                )
+                pokemons.append(pokemon)
+                continue
+
+        self.mi_pokemon = pokemons[0]
+        del pokemons[0]
+        self.pokemons_atrapados = pokemons
+        
+        Utils.pause()
 
     def __seleccionar_guardado(self):
         usuarios = self.database.get_all_users()
