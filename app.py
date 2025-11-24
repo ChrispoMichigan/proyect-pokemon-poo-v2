@@ -843,36 +843,47 @@ class App:
                     en_def, en_vida = aplicar_daño(self.mi_pokemon.ataque, en_def, en_vida)
                     print(f"Hiciste un ataque normal con {self.mi_pokemon.ataque}.")
 
+                    mi_def, mi_vida = aplicar_daño(enemigo.ataque, mi_def, mi_vida)
+                    print(f"{enemigo.nombre} te contraataca ({enemigo.ataque}).")
+
                 elif op == 3:
                     atk_val = int(self.mi_pokemon.ataque * 1.5)
                     en_def, en_vida = aplicar_daño(atk_val, en_def, en_vida)
                     special = getattr(self.mi_pokemon, "ataque_especial", "Ataque Especial")
                     print(f"{self.mi_pokemon.nombre} usa {special} ({atk_val} dmg).")
 
+                    mi_def, mi_vida = aplicar_daño(enemigo.ataque, mi_def, mi_vida)
+                    print(f"{enemigo.nombre} te contraataca ({enemigo.ataque}).")
+
                 elif op == 4:
                     print("Huyes del combate.")
                     Utils.pause()
                     return
+                    
                 else:
                     print("Opcion invalida, se considera pasar turno.")
+                    
+                turno_jugador = False
             else:
-                    choice = random.choice([1, 2, 3])
-                    if choice == 1:
-                        print(f"{enemigo.nombre} pasa el turno.")
+                choice = random.choice([1, 2, 3])
+                
+                if choice == 1:
+                    print(f"{enemigo.nombre} pasa el turno.")
 
-                    elif choice == 2:
-                        mi_def, mi_vida = aplicar_daño(enemigo.ataque, mi_def, mi_vida)
-                        print(f" {enemigo.nombre} te golpea con ataque normal ({enemigo.ataque}).")
+                elif choice == 2:
+                    mi_def, mi_vida = aplicar_daño(enemigo.ataque, mi_def, mi_vida)
+                    print(f" {enemigo.nombre} te golpea con ataque normal ({enemigo.ataque}).")
 
-                    elif choice == 3:
-                        atk_val = int(enemigo.ataque * 1.5)
-                        mi_def, mi_vida = aplicar_daño(atk_val, mi_def, mi_vida)
-                        special = getattr(enemigo, "ataque_especial", "Atgaque Especial")
-                        print(f"{enemigo.nombre} usa {special} ({atk_val} dmg).")
+                elif choice == 3:
+                    atk_val = int(enemigo.ataque * 1.5)
+                    mi_def, mi_vida = aplicar_daño(atk_val, mi_def, mi_vida)
+                    special = getattr(enemigo, "ataque_especial", "Atgaque Especial")
+                    print(f"{enemigo.nombre} usa {special} ({atk_val} dmg).")
 
-                        turno_jugador = not turno_jugador
-                        Utils.pause()
-                        Utils.clear()
+                turno_jugador = True
+
+            Utils.pause()
+            Utils.clear()
 
 
         Utils.clear()
